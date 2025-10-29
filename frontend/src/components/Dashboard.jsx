@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import LikedPosts from "./LikedPosts";
 import MyPosts from "./MyPosts";
-import axios from "axios";
+import  api  from "../api"; // ✅ use centralized axios instance
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 const Dashboard = () => {
-  const token = localStorage.getItem("token");
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -18,17 +17,26 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState("");
 
-  // 🔹 Fetch logged-in user's profile
+  // ✅ Fetch logged-in user's profile
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/user/profile", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setProfile(res.data))
-      .catch((err) => console.error("Error fetching profile:", err));
-  }, [token]);
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/user/profile");
+        console.log("Profile data from backend:", res.data);
+        setProfile(res.data);
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+        if (err.response?.status === 401) {
+          alert("Unauthorized. Please log in again.");
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
 
-  // 🔹 Handle file selection
+  // ✅ Handle file selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -37,12 +45,12 @@ const Dashboard = () => {
     }
   };
 
-  // 🔹 Handle text change
+  // ✅ Handle text input change
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  // 🔹 Save profile updates
+  // ✅ Save updated profile
   const handleSave = async () => {
     try {
       const formData = new FormData();
@@ -50,55 +58,50 @@ const Dashboard = () => {
       formData.append("location", profile.location);
       if (selectedFile) formData.append("profilePic", selectedFile);
 
-      const res = await axios.put(
-        "http://localhost:5000/api/user/profile",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await api.put("/user/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       setProfile(res.data);
       setEditing(false);
       setSelectedFile(null);
       setPreview("");
+      alert("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("Failed to update profile");
+      alert("Failed to update profile. Try again.");
     }
   };
 
+  // ✅ Build image URL
+  const backendURL = import.meta.env.VITE_BACKEND_URL;
+  const imageURL = preview
+    ? preview
+    : profile.profilePic
+    ? `${backendURL}${profile.profilePic}`
+    : "https://via.placeholder.com/100";
+
   return (
     <div className="container mt-4 mb-5">
-      <h2 className="text-center fw-bold mb-4 text-primary">
-         User Dashboard
-      </h2>
+      <h2 className="text-center fw-bold mb-4 text-primary">User Dashboard</h2>
 
       {/* 🔹 Profile Section */}
       <div className="card shadow-sm p-3 mb-5 border-0 rounded-4">
         <h4 className="text-secondary mb-3">Profile Information</h4>
+
         <div className="d-flex align-items-center mb-3">
           <img
-            src={
-              preview
-                ? preview
-                : profile.profilePic
-                ? `http://localhost:5000${profile.profilePic}`
-                : "https://via.placeholder.com/100"
-            }
+            src={imageURL}
             alt="Profile"
             className="rounded-circle me-3 border border-2 border-light shadow-sm"
             style={{ width: "100px", height: "100px", objectFit: "cover" }}
           />
           <div>
             <p className="mb-1">
-              <strong>Name:</strong> {profile.name}
+              <strong>Name:</strong> {profile.name || "Not available"}
             </p>
             <p className="mb-1">
-              <strong>Email:</strong> {profile.email}
+              <strong>Email:</strong> {profile.email || "Not available"}
             </p>
           </div>
         </div>
@@ -127,13 +130,13 @@ const Dashboard = () => {
               onChange={handleFileChange}
             />
             <button className="btn btn-success me-2" onClick={handleSave}>
-               Save
+              Save
             </button>
             <button
               className="btn btn-outline-secondary mt-2"
               onClick={() => setEditing(false)}
             >
-               Cancel
+              Cancel
             </button>
           </>
         ) : (
@@ -148,15 +151,15 @@ const Dashboard = () => {
                     <strong>Location:</strong> {profile.location || "Not set"}
                   </p>
                   <p>
-                    <strong>Phone Number:</strong> {"9876543210"}
+                    <strong>Phone Number:</strong> 9876543210
                   </p>
                 </div>
                 <div className="col-md-6 col-12 mb-1">
                   <p>
-                    <strong>Youtube:</strong> {"www.youtube.com"}
+                    <strong>Youtube:</strong> www.youtube.com
                   </p>
                   <p>
-                    <strong>Social Media:</strong> {"www.instagram.com"}
+                    <strong>Social Media:</strong> www.instagram.com
                   </p>
                 </div>
               </div>
@@ -166,7 +169,7 @@ const Dashboard = () => {
               className="btn btn-primary mt-2"
               onClick={() => setEditing(true)}
             >
-               Edit Profile
+              Edit Profile
             </button>
           </>
         )}
@@ -174,7 +177,7 @@ const Dashboard = () => {
 
       {/* 🔹 Accordion Section */}
       <div className="accordion shadow-sm rounded-4 border-0" id="postsAccordion">
-        {/*  Liked Posts */}
+        {/* Liked Posts */}
         <div className="accordion-item border-0 mb-3">
           <h2 className="accordion-header" id="headingLiked">
             <button
@@ -184,12 +187,9 @@ const Dashboard = () => {
               data-bs-target="#collapseLiked"
               aria-expanded="true"
               aria-controls="collapseLiked"
-              style={{
-                backgroundColor: "#f8f9fa",
-                borderRadius: "12px",
-              }}
+              style={{ backgroundColor: "#f8f9fa", borderRadius: "12px" }}
             >
-               Liked Posts
+              Liked Posts
             </button>
           </h2>
           <div
@@ -204,7 +204,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/*  My Posts */}
+        {/* My Posts */}
         <div className="accordion-item border-0 mb-3">
           <h2 className="accordion-header" id="headingMyPosts">
             <button
@@ -214,12 +214,9 @@ const Dashboard = () => {
               data-bs-target="#collapseMyPosts"
               aria-expanded="false"
               aria-controls="collapseMyPosts"
-              style={{
-                backgroundColor: "#f8f9fa",
-                borderRadius: "12px",
-              }}
+              style={{ backgroundColor: "#f8f9fa", borderRadius: "12px" }}
             >
-               My Posts
+              My Posts
             </button>
           </h2>
           <div
@@ -229,7 +226,7 @@ const Dashboard = () => {
             data-bs-parent="#postsAccordion"
           >
             <div className="accordion-body bg-white rounded-bottom-4 border-top">
-              <MyPosts token={token} />
+              <MyPosts />
             </div>
           </div>
         </div>

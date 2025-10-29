@@ -1,38 +1,31 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api"; // ✅ use centralized axios instance
 
-const MyPosts = ({ token }) => {
+const MyPosts = () => {
   const [posts, setPosts] = useState([]);
   const [editingPost, setEditingPost] = useState(null);
   const [editText, setEditText] = useState("");
+  const defaultAvatar = "/avatar.jpeg";
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Default avatar if no profile image is available
-  const defaultAvatar = "../avatar.jpeg"; // Place this image in /public folder
-
-  // Fetch user's posts
+  // ✅ Fetch user's own posts
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        if (!token) return;
-
-        const res = await axios.get("http://localhost:5000/api/posts/my-posts", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get("/posts/my-posts");
         setPosts(res.data);
       } catch (err) {
         console.error("Error fetching user posts:", err.response?.data || err.message);
       }
     };
     fetchPosts();
-  }, [token]);
+  }, []);
 
-  // Delete post
+  // ✅ Delete post
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this post?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/posts/delete/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/posts/delete/${id}`);
       setPosts((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       console.error("Error deleting post:", err.response?.data || err.message);
@@ -40,21 +33,16 @@ const MyPosts = ({ token }) => {
     }
   };
 
-  // Start editing
+  // ✅ Edit post
   const handleEdit = (post) => {
     setEditingPost(post._id);
     setEditText(post.text);
   };
 
-  // Save edited post
+  // ✅ Save post
   const handleSave = async (id) => {
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/posts/edit/${id}`,
-        { text: editText },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const res = await api.put(`/posts/edit/${id}`, { text: editText });
       setPosts((prev) => prev.map((p) => (p._id === id ? res.data.post : p)));
       setEditingPost(null);
       setEditText("");
@@ -67,19 +55,17 @@ const MyPosts = ({ token }) => {
   return (
     <div className="col-md-8 offset-md-2">
       <h3 className="mb-4 text-center">My Posts</h3>
-
       {posts.length === 0 ? (
         <p className="text-center text-muted">You haven’t created any posts yet.</p>
       ) : (
         posts.map((post) => (
           <div key={post._id} className="card mb-3 shadow-sm border-1 rounded-3">
             <div className="card-body">
-              {/* Header with profile picture and date */}
               <div className="d-flex align-items-center mb-2">
                 <img
                   src={
                     post.user?.profileImage
-                      ? `http://localhost:5000${post.user.profileImage}`
+                      ? `${BASE_URL}${post.user.profileImage}`
                       : defaultAvatar
                   }
                   alt="Profile"
@@ -108,41 +94,29 @@ const MyPosts = ({ token }) => {
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                   />
-                  <button
-                    className="btn btn-success btn-sm me-2"
-                    onClick={() => handleSave(post._id)}
-                  >
+                  <button className="btn btn-success btn-sm me-2" onClick={() => handleSave(post._id)}>
                     Save
                   </button>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setEditingPost(null)}
-                  >
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditingPost(null)}>
                     Cancel
                   </button>
                 </>
               ) : (
                 <>
                   <p className="mt-2">{post.text}</p>
-
+                  {post.imageUrl && (
                     <img
-                      src={post.imageUrl?`http://localhost:5000${post.imageUrl}`:'/defaultPost.png'}
-
+                      src={`${BASE_URL}${post.imageUrl}`}
                       alt="Post"
                       className="img-fluid rounded mb-2"
                       style={{ maxHeight: "400px", objectFit: "cover" }}
                     />
+                  )}
                   <div className="d-flex justify-content-end">
-                    <button
-                      className="btn btn-outline-primary btn-sm me-2"
-                      onClick={() => handleEdit(post)}
-                    >
+                    <button className="btn btn-outline-primary btn-sm me-2" onClick={() => handleEdit(post)}>
                       Edit
                     </button>
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => handleDelete(post._id)}
-                    >
+                    <button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(post._id)}>
                       Delete
                     </button>
                   </div>

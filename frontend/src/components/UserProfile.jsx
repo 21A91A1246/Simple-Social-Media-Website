@@ -9,7 +9,7 @@ const UserProfile = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/api/user/user/${id}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/api/user/user/${id}`)
       .then((res) => {
         setUser(res.data);
         setLoading(false);
@@ -43,7 +43,7 @@ const UserProfile = () => {
           <img
             src={
               user.profilePic
-                ? `http://localhost:5000${user.profilePic}`
+                ? `${import.meta.env.VITE_BACKEND_URL}${user.profilePic}`
                 : "/avatar.jpeg"
             }
             alt="Profile"

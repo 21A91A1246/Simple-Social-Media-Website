@@ -37,7 +37,7 @@ const LikedPosts = () => {
                 <img
                   src={
                     p.user?.profileImage
-                      ? `http://localhost:5000${p.user.imageUrl}`
+                      ? `${import.meta.env.VITE_BACKEND_URL}${p.user.imageUrl}`
                       : defaultAvatar
                   }
                   alt="Profile"
@@ -64,7 +64,7 @@ const LikedPosts = () => {
               {/* Post image */}
               
                 <img
-                  src={p.imageUrl?`http://localhost:5000${p.imageUrl}`:'/defaultPost.png'}
+                  src={p.imageUrl?`${import.meta.env.VITE_BACKEND_URL}${p.imageUrl}`:'/defaultPost.png'}
                   alt="Post"
                   className="img-fluid rounded mb-2"
                   style={{ maxHeight: "400px", objectFit: "cover" }}

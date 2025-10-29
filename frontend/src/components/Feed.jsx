@@ -81,7 +81,7 @@ export default function Feed() {
           {/* --- Image --- */}
           <div style={{ position: 'relative' }}>
             <img
-              src={p.imageUrl?`http://localhost:5000${p.imageUrl}`:'../defaultPost.png'}
+              src={p.imageUrl?`${import.meta.env.VITE_BACKEND_URL}${p.imageUrl}`:'../defaultPost.png'}
               alt="Post"
               className="img-fluid"
               style={{
