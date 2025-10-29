@@ -16,7 +16,7 @@ export default function Signup({ onAuth }){
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       onAuth(res.data.user);
-      nav('login');
+      nav('/login');
     } catch (error) {
       setErr(error.response?.data?.message || 'Error');
     }
